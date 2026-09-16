@@ -30,7 +30,7 @@ function push_uart_digital () {
     for (let value of list_digit_text) {
         string_builder = "" + string_builder + value
     }
-    bluetooth.uartWriteLine("B|" + string_builder)
+    bluetooth.uartWriteLine("B_" + string_builder)
 }
 bluetooth.onBluetoothConnected(function () {
     bluetooth_connected = 1
@@ -127,7 +127,7 @@ function push_uart_analog () {
     for (let value of list_analog_char) {
         string_builder = "" + string_builder + value
     }
-    bluetooth.uartWriteLine("A|" + string_builder)
+    bluetooth.uartWriteLine("A_" + string_builder)
 }
 function if_value_equals_set_to_b58 (value: string, is_equals: string, set_to: string) {
     if (value == is_equals) {
@@ -204,7 +204,6 @@ function five_boolean_to_base_32_char (wb1: boolean, wb2: boolean, wb3: boolean,
     }
 }
 function push_uart () {
-    basic.pause(time_between_push)
     push_uart_digital()
     push_uart_analog()
 }
@@ -231,7 +230,7 @@ bluetooth.setTransmitPower(7)
 list_analog_char = []
 list_digit_text = []
 basic.forever(function () {
-    basic.pause(500)
+    basic.pause(time_between_push)
     if (bluetooth_connected == 1) {
         push_uart()
     }
