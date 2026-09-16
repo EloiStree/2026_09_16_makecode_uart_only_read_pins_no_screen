@@ -1,14 +1,28 @@
 function parse_int_360_to_b62 (num: number) {
-    int_to_b62_char("" + Math.map(num, 0, 360, 0, 61))
+    int_to_b62_char("" + Math.round(Math.map(num, 0, 360, 0, 61)))
 }
 bluetooth.onBluetoothConnected(function () {
-	
+    bluetooth_connected = 1
+    basic.showLeds(`
+        # # # # #
+        . . . . .
+        . . . . .
+        . . . . .
+        . . . . .
+        `)
 })
 bluetooth.onBluetoothDisconnected(function () {
-	
+    bluetooth_connected = 0
+    basic.showLeds(`
+        . . . . .
+        . . . . .
+        . . . . .
+        . . . . .
+        # # # # #
+        `)
 })
 function parse_int_1023_to_b62 (num: number) {
-    int_to_b62_char("" + Math.map(num, 0, 1023, 0, 61))
+    int_to_b62_char("" + Math.round(Math.map(num, 0, 1023, 0, 61)))
 }
 function five_boolean_to_base32 (bool: boolean, bool2: boolean, bool3: boolean, bool4: boolean, bool5: boolean) {
     five_boolean_to_base_32_char(false, false, false, false, false, bool, bool2, bool3, bool4, bool5, "0")
@@ -45,14 +59,20 @@ function five_boolean_to_base32 (bool: boolean, bool2: boolean, bool3: boolean, 
     five_boolean_to_base_32_char(true, true, true, true, true, bool, bool2, bool3, bool4, bool5, "V")
 }
 function parse_int_255_to_b62 (num: number) {
-    int_to_b62_char("" + Math.map(num, 0, 255, 0, 61))
+    int_to_b62_char("" + Math.round(Math.map(num, 0, 255, 0, 61)))
 }
 bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
-	
+    received_ble = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
+    if (received_ble == "PING") {
+        bluetooth.uartWriteLine("PONG")
+    }
+    if (received_ble == "?") {
+        push_uart()
+    }
 })
 function if_value_equals_set_to_b58 (value: string, is_equals: string, set_to: string) {
     if (value == is_equals) {
-        return_b62 = set_to
+        list_analog_char.push(set_to)
     }
 }
 function int_to_b62_char (int_value: string) {
@@ -120,102 +140,79 @@ function int_to_b62_char (int_value: string) {
     if_value_equals_set_to_b58(int_value, "61", "z")
 }
 function five_boolean_to_base_32_char (wb1: boolean, wb2: boolean, wb3: boolean, wb: boolean, wb5: boolean, b1: boolean, b2: boolean, b3: boolean, b4: boolean, b5: boolean, text: string) {
-    if (wb1 && b1) {
-        if (wb2 && b2) {
-            if (wb3 && b3) {
-                if (wb && b4) {
-                    if (wb5 && b5) {
-                        return_b62 = text
-                    }
-                }
-            }
-        }
+    if (wb1 == b1 && (wb2 == b2 && (wb3 == b3 && (wb == b4 && wb5 == b5)))) {
+        list_digit_text.push(text)
     }
 }
-let pin_digit_16 = false
-let pin_digit_15 = false
-let pin_digit_14 = false
-let pin_digit_13 = false
-let pin_digit_12 = false
-let pin_digit_11 = false
-let pin_digit_09 = false
-let pin_digit_08 = false
-let pin_digit_07 = false
-let pin_digit_06 = false
-let pin_digit_05 = false
-let pin_digit_04 = false
-let pin_analog_10 = ""
-let pin_analog_03 = ""
-let pin_analog_02 = ""
-let pin_analog_01 = ""
-let pin_analog_00 = ""
-let return_b62 = ""
-let list_analog_char: string[] = []
-let list_digit_text: string[] = []
-basic.clearScreen()
-bluetooth.startUartService()
-bluetooth.setTransmitPower(7)
-basic.forever(function () {
-    basic.pause(200)
+function push_uart () {
     while (list_analog_char.length > 0) {
         list_analog_char.shift()
     }
     while (list_digit_text.length > 0) {
         list_digit_text.shift()
     }
+    basic.pause(500)
     parse_int_1023_to_b62(pins.analogReadPin(AnalogPin.P0))
-    pin_analog_00 = return_b62
-    list_analog_char.push(return_b62)
     parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P1))
-    pin_analog_01 = return_b62
-    list_analog_char.push(return_b62)
     parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P2))
-    pin_analog_02 = return_b62
-    list_analog_char.push(return_b62)
-    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P3))
-    pin_analog_03 = return_b62
-    list_analog_char.push(return_b62)
-    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P10))
-    pin_analog_10 = return_b62
-    list_analog_char.push(return_b62)
-    pin_digit_04 = pins.digitalReadPin(DigitalPin.P4) == 1
-    pin_digit_05 = pins.digitalReadPin(DigitalPin.P5) == 1
-    pin_digit_06 = pins.digitalReadPin(DigitalPin.P6) == 1
-    pin_digit_07 = pins.digitalReadPin(DigitalPin.P7) == 1
     pin_digit_08 = pins.digitalReadPin(DigitalPin.P8) == 1
-    five_boolean_to_base32(pin_digit_04, pin_digit_05, pin_digit_06, pin_digit_07, pin_digit_08)
-    list_digit_text.push(return_b62)
-    pin_digit_09 = pins.digitalReadPin(DigitalPin.P9) == 1
-    pin_digit_11 = pins.digitalReadPin(DigitalPin.P11) == 1
     pin_digit_12 = pins.digitalReadPin(DigitalPin.P12) == 1
     pin_digit_13 = pins.digitalReadPin(DigitalPin.P13) == 1
     pin_digit_14 = pins.digitalReadPin(DigitalPin.P14) == 1
-    five_boolean_to_base32(pin_digit_09, pin_digit_11, pin_digit_12, pin_digit_13, pin_digit_14)
-    list_digit_text.push(return_b62)
     pin_digit_15 = pins.digitalReadPin(DigitalPin.P15) == 1
     pin_digit_16 = pins.digitalReadPin(DigitalPin.P16) == 1
-    five_boolean_to_base32(pin_digit_15, pin_digit_16, input.isGesture(Gesture.LogoUp), input.isGesture(Gesture.LogoDown), input.soundLevel() > 200)
-    list_digit_text.push(return_b62)
-    five_boolean_to_base32(input.isGesture(Gesture.ScreenUp), input.isGesture(Gesture.ScreenDown), input.isGesture(Gesture.TiltLeft), input.isGesture(Gesture.TiltRight), input.lightLevel() > 120)
-    list_digit_text.push(return_b62)
+    five_boolean_to_base32(input.buttonIsPressed(Button.A), input.buttonIsPressed(Button.B), input.logoIsPressed(), false, false)
+    five_boolean_to_base32(pin_digit_08, pin_digit_12, pin_digit_13, pin_digit_14, pin_digit_15)
+    five_boolean_to_base32(pin_digit_16, input.soundLevel() > 100, input.lightLevel() > 120, input.isGesture(Gesture.LogoUp), input.isGesture(Gesture.LogoDown))
+    five_boolean_to_base32(input.isGesture(Gesture.ScreenUp), input.isGesture(Gesture.ScreenDown), input.isGesture(Gesture.TiltLeft), input.isGesture(Gesture.TiltRight), false)
     five_boolean_to_base32(input.isGesture(Gesture.ThreeG), input.isGesture(Gesture.SixG), input.isGesture(Gesture.EightG), input.isGesture(Gesture.FreeFall), input.isGesture(Gesture.Shake))
-    list_digit_text.push(return_b62)
     parse_int_360_to_b62(input.compassHeading())
-    list_analog_char.push(return_b62)
     parse_int_1023_to_b62(input.acceleration(Dimension.X))
-    list_analog_char.push(return_b62)
     parse_int_1023_to_b62(input.acceleration(Dimension.Y))
-    list_analog_char.push(return_b62)
     parse_int_1023_to_b62(input.acceleration(Dimension.Z))
-    list_analog_char.push(return_b62)
     parse_int_1023_to_b62(input.acceleration(Dimension.Strength))
-    list_analog_char.push(return_b62)
     parse_int_255_to_b62(input.soundLevel())
-    list_analog_char.push(return_b62)
     parse_int_255_to_b62(input.lightLevel())
-    list_analog_char.push(return_b62)
     int_to_b62_char("" + Math.round(input.temperature()))
-    list_analog_char.push(return_b62)
-    bluetooth.uartWriteLine("a" + ("" + list_analog_char))
-    bluetooth.uartWriteLine("b" + ("" + list_digit_text))
+    basic.pause(500)
+    string_builder = ""
+    for (let value of list_analog_char) {
+        string_builder = "" + string_builder + value
+    }
+    bluetooth.uartWriteLine("A|" + string_builder)
+    string_builder = ""
+    for (let value of list_digit_text) {
+        string_builder = "" + string_builder + value
+    }
+    bluetooth.uartWriteLine("B|" + string_builder)
+    bluetooth.uartWriteLine("?" + pins.digitalReadPin(DigitalPin.P12))
+    basic.pause(500)
+}
+let string_builder = ""
+let pin_digit_16 = false
+let pin_digit_15 = false
+let pin_digit_14 = false
+let pin_digit_13 = false
+let pin_digit_12 = false
+let pin_digit_08 = false
+let received_ble = ""
+let bluetooth_connected = 0
+let list_digit_text: string[] = []
+let list_analog_char: string[] = []
+basic.clearScreen()
+bluetooth.setTransmitPower(7)
+basic.showLeds(`
+    # # # # #
+    # . . . #
+    # . . . #
+    # . . . #
+    # # # # #
+    `)
+list_analog_char = []
+list_digit_text = []
+basic.forever(function () {
+    basic.pause(500)
+    if (bluetooth_connected == 1) {
+        push_uart()
+    }
 })
