@@ -26,14 +26,18 @@ function push_uart_digital () {
     pin_digit_09 = pins.digitalReadPin(DigitalPin.P9) == 1
     five_boolean_to_base32(input.buttonIsPressed(Button.A), input.buttonIsPressed(Button.B), input.logoIsPressed(), input.isGesture(Gesture.Shake), input.isGesture(Gesture.FreeFall))
     five_boolean_to_base32(fake_3g == 1, fake_6g == 1, fake_8g == 1, input.isGesture(Gesture.LogoUp), input.isGesture(Gesture.LogoDown))
-    five_boolean_to_base32(input.isGesture(Gesture.ScreenUp), input.isGesture(Gesture.ScreenDown), input.isGesture(Gesture.TiltLeft), input.isGesture(Gesture.TiltRight), input.soundLevel() > 180)
+    five_boolean_to_base32(input.isGesture(Gesture.ScreenUp), input.isGesture(Gesture.ScreenDown), input.isGesture(Gesture.TiltLeft), input.isGesture(Gesture.TiltRight), pins.digitalReadPin(DigitalPin.P3) == 1)
     five_boolean_to_base32(pin_digit_12, pin_digit_13, pin_digit_14, pin_digit_15, pin_digit_16)
-    five_boolean_to_base32(pin_digit_08, pin_digit_09, input.temperature() < 10, input.temperature() < 25, input.temperature() > 30)
+    five_boolean_to_base32(pin_digit_08, pin_digit_09, pins.digitalReadPin(DigitalPin.P0) == 1, pins.digitalReadPin(DigitalPin.P1) == 1, pins.digitalReadPin(DigitalPin.P2) == 1)
     string_builder = ""
     for (let value of list_digit_text) {
         string_builder = "" + string_builder + value
     }
-    bluetooth.uartWriteLine("*B_" + string_builder + "*")
+    previous_boolean_string_builder = current_boolean_string_builder
+    current_boolean_string_builder = "*B_" + string_builder + "*"
+    if (previous_boolean_string_builder != current_boolean_string_builder) {
+        bluetooth.uartWriteLine(current_boolean_string_builder)
+    }
 }
 bluetooth.onBluetoothConnected(function () {
     bluetooth_connected = 1
@@ -102,8 +106,9 @@ function parse_int_255_to_b62 (num: number) {
 }
 bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
     received_ble = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
+    led.toggle(2, 2)
     if (received_ble == "PING") {
-        bluetooth.uartWriteLine("PONG")
+        bluetooth.uartWriteLine("*PONG*")
     }
     if (received_ble == "?") {
         push_uart()
@@ -223,6 +228,9 @@ function five_boolean_to_base_32_char (wb1: boolean, wb2: boolean, wb3: boolean,
         list_digit_text.push(text)
     }
 }
+input.onLogoEvent(TouchButtonEvent.Pressed, function () {
+	
+})
 input.onGesture(Gesture.ThreeG, function () {
     fake_3g = 1
     basic.pause(500)
@@ -232,8 +240,11 @@ function push_uart () {
     push_uart_digital()
     push_uart_analog()
 }
+let tick = 0
 let received_ble = ""
 let bluetooth_connected = 0
+let current_boolean_string_builder = ""
+let previous_boolean_string_builder = ""
 let string_builder = ""
 let fake_6g = 0
 let fake_3g = 0
@@ -248,6 +259,10 @@ let fake_8g = 0
 let time_between_push = 0
 let list_digit_text: string[] = []
 let list_analog_char: string[] = []
+pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)
+pins.touchSetMode(TouchTarget.P1, TouchTargetMode.Capacitive)
+pins.touchSetMode(TouchTarget.P2, TouchTargetMode.Capacitive)
+pins.touchSetMode(TouchTarget.LOGO, TouchTargetMode.Capacitive)
 input.setSoundThreshold(SoundThreshold.Loud, 240)
 bluetooth.startUartService()
 bluetooth.setTransmitPower(7)
@@ -261,9 +276,27 @@ basic.showLeds(`
     # . . . #
     # # # # #
     `)
+/**
+ * Try to keep awake
+ */
+basic.forever(function () {
+    basic.pause(100)
+    led.toggle(0, 2)
+    bluetooth.setTransmitPower(7)
+    basic.pause(100)
+    bluetooth.setTransmitPower(6)
+})
 basic.forever(function () {
     basic.pause(time_between_push)
     if (bluetooth_connected == 1) {
         push_uart()
     }
+})
+basic.forever(function () {
+    basic.pause(20)
+    push_uart_digital()
+})
+control.inBackground(function () {
+    control.waitMicros(6000)
+    tick += 1
 })
