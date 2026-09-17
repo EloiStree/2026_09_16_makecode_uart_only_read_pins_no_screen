@@ -5,6 +5,11 @@
  * 
  * EXCEPT ON TH 5 11 THAT ARE BUTTON AB
  */
+input.onGesture(Gesture.EightG, function () {
+    fake_8g = 1
+    basic.pause(500)
+    fake_8g = 0
+})
 function parse_int_360_to_b62 (num: number) {
     parse_int_1023_to_b62(Math.round(Math.map(num, 0, 360, 0, 1023)))
 }
@@ -20,7 +25,7 @@ function push_uart_digital () {
     pin_digit_16 = pins.digitalReadPin(DigitalPin.P16) == 1
     pin_digit_09 = pins.digitalReadPin(DigitalPin.P9) == 1
     five_boolean_to_base32(input.buttonIsPressed(Button.A), input.buttonIsPressed(Button.B), input.logoIsPressed(), input.isGesture(Gesture.Shake), input.isGesture(Gesture.FreeFall))
-    five_boolean_to_base32(input.isGesture(Gesture.ThreeG), input.isGesture(Gesture.SixG), input.isGesture(Gesture.EightG), input.isGesture(Gesture.LogoUp), input.isGesture(Gesture.LogoDown))
+    five_boolean_to_base32(fake_3g == 1, fake_6g == 1, fake_8g == 1, input.isGesture(Gesture.LogoUp), input.isGesture(Gesture.LogoDown))
     five_boolean_to_base32(input.isGesture(Gesture.ScreenUp), input.isGesture(Gesture.ScreenDown), input.isGesture(Gesture.TiltLeft), input.isGesture(Gesture.TiltRight), input.soundLevel() > 180)
     five_boolean_to_base32(pin_digit_12, pin_digit_13, pin_digit_14, pin_digit_15, pin_digit_16)
     five_boolean_to_base32(pin_digit_08, pin_digit_09, input.temperature() < 10, input.temperature() < 25, input.temperature() > 30)
@@ -32,9 +37,28 @@ function push_uart_digital () {
 }
 bluetooth.onBluetoothConnected(function () {
     bluetooth_connected = 1
+    basic.showLeds(`
+        # # # # #
+        . . . . .
+        . . . . .
+        . . . . .
+        . . . . .
+        `)
 })
 bluetooth.onBluetoothDisconnected(function () {
     bluetooth_connected = 0
+    basic.showLeds(`
+        . . . . .
+        . . . . .
+        . . . . .
+        . . . . .
+        # # # # #
+        `)
+})
+input.onGesture(Gesture.SixG, function () {
+    fake_6g = 1
+    basic.pause(500)
+    fake_6g = 0
 })
 function parse_int_1023_to_b62 (num: number) {
     int_to_b62_char("" + Math.round(Math.map(num, 0, 1023, 0, 61)))
@@ -199,6 +223,11 @@ function five_boolean_to_base_32_char (wb1: boolean, wb2: boolean, wb3: boolean,
         list_digit_text.push(text)
     }
 }
+input.onGesture(Gesture.ThreeG, function () {
+    fake_3g = 1
+    basic.pause(500)
+    fake_3g = 0
+})
 function push_uart () {
     push_uart_digital()
     push_uart_analog()
@@ -206,6 +235,8 @@ function push_uart () {
 let received_ble = ""
 let bluetooth_connected = 0
 let string_builder = ""
+let fake_6g = 0
+let fake_3g = 0
 let pin_digit_09 = false
 let pin_digit_16 = false
 let pin_digit_15 = false
@@ -213,6 +244,7 @@ let pin_digit_14 = false
 let pin_digit_13 = false
 let pin_digit_12 = false
 let pin_digit_08 = false
+let fake_8g = 0
 let time_between_push = 0
 let list_digit_text: string[] = []
 let list_analog_char: string[] = []
@@ -222,6 +254,13 @@ bluetooth.setTransmitPower(7)
 list_analog_char = []
 list_digit_text = []
 time_between_push = 100
+basic.showLeds(`
+    # # # # #
+    # . . . #
+    # . . . #
+    # . . . #
+    # # # # #
+    `)
 basic.forever(function () {
     basic.pause(time_between_push)
     if (bluetooth_connected == 1) {
