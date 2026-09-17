@@ -6,7 +6,7 @@
  * EXCEPT ON TH 5 11 THAT ARE BUTTON AB
  */
 function parse_int_360_to_b62 (num: number) {
-    int_to_b62_char("" + Math.round(Math.map(num, 0, 360, 0, 61)))
+    parse_int_1023_to_b62(Math.round(Math.map(num, 0, 360, 0, 1023)))
 }
 function push_uart_digital () {
     while (list_digit_text.length > 0) {
@@ -18,19 +18,17 @@ function push_uart_digital () {
     pin_digit_14 = pins.digitalReadPin(DigitalPin.P14) == 1
     pin_digit_15 = pins.digitalReadPin(DigitalPin.P15) == 1
     pin_digit_16 = pins.digitalReadPin(DigitalPin.P16) == 1
-    pin_digit_06 = pins.digitalReadPin(DigitalPin.P6) == 1
-    pin_digit_07 = pins.digitalReadPin(DigitalPin.P7) == 1
     pin_digit_09 = pins.digitalReadPin(DigitalPin.P9) == 1
-    five_boolean_to_base32(input.buttonIsPressed(Button.A), input.buttonIsPressed(Button.B), input.logoIsPressed(), input.soundLevel() > 100, input.lightLevel() > 120)
+    five_boolean_to_base32(input.buttonIsPressed(Button.A), input.buttonIsPressed(Button.B), input.logoIsPressed(), input.isGesture(Gesture.Shake), input.isGesture(Gesture.FreeFall))
     five_boolean_to_base32(input.isGesture(Gesture.ThreeG), input.isGesture(Gesture.SixG), input.isGesture(Gesture.EightG), input.isGesture(Gesture.LogoUp), input.isGesture(Gesture.LogoDown))
-    five_boolean_to_base32(input.isGesture(Gesture.ScreenUp), input.isGesture(Gesture.ScreenDown), input.isGesture(Gesture.TiltLeft), input.isGesture(Gesture.TiltRight), input.isGesture(Gesture.Shake))
+    five_boolean_to_base32(input.isGesture(Gesture.ScreenUp), input.isGesture(Gesture.ScreenDown), input.isGesture(Gesture.TiltLeft), input.isGesture(Gesture.TiltRight), input.soundLevel() > 180)
     five_boolean_to_base32(pin_digit_12, pin_digit_13, pin_digit_14, pin_digit_15, pin_digit_16)
-    five_boolean_to_base32(pin_digit_06, pin_digit_07, pin_digit_08, pin_digit_09, input.isGesture(Gesture.FreeFall))
+    five_boolean_to_base32(pin_digit_08, pin_digit_09, input.temperature() < 10, input.temperature() < 25, input.temperature() > 30)
     string_builder = ""
     for (let value of list_digit_text) {
         string_builder = "" + string_builder + value
     }
-    bluetooth.uartWriteLine("B_" + string_builder)
+    bluetooth.uartWriteLine("*B_" + string_builder + "*")
 }
 bluetooth.onBluetoothConnected(function () {
     bluetooth_connected = 1
@@ -76,7 +74,7 @@ function five_boolean_to_base32 (bool: boolean, bool2: boolean, bool3: boolean, 
     five_boolean_to_base_32_char(true, true, true, true, true, bool, bool2, bool3, bool4, bool5, "V")
 }
 function parse_int_255_to_b62 (num: number) {
-    int_to_b62_char("" + Math.round(Math.map(num, 0, 255, 0, 61)))
+    parse_int_1023_to_b62(Math.round(Math.map(num, 0, 255, 0, 1023)))
 }
 bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
     received_ble = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
@@ -109,25 +107,23 @@ function push_uart_analog () {
     while (list_analog_char.length > 0) {
         list_analog_char.shift()
     }
-    parse_int_1023_to_b62(pins.analogReadPin(AnalogPin.P0))
-    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P1))
-    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P2))
-    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P3))
-    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P4))
-    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P10))
-    parse_int_1023_to_b62(input.acceleration(Dimension.X))
-    parse_int_1023_to_b62(input.acceleration(Dimension.Y))
-    parse_int_1023_to_b62(input.acceleration(Dimension.Z))
-    parse_int_1023_to_b62(input.acceleration(Dimension.Strength))
+    parse_int_1023_to_b62(Math.round(Math.map(input.runningTime() / 60000 % 60, 0, 59.9999, 0, 1023)))
+    parse_int_1023_to_b62(Math.round(Math.map(input.runningTime() / 1000 % 60, 0, 59.9999, 0, 1023)))
     parse_int_255_to_b62(input.soundLevel())
     parse_int_255_to_b62(input.lightLevel())
     parse_int_360_to_b62(input.compassHeading())
     int_to_b62_char("" + Math.round(input.temperature()))
+    parse_int_1023_to_b62(pins.analogReadPin(AnalogPin.P0))
+    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P1))
+    parse_int_1023_to_b62(pins.analogReadPin(AnalogReadWritePin.P2))
+    parse_int_1023_to_b62((input.acceleration(Dimension.X) + 1024) / 2)
+    parse_int_1023_to_b62((input.acceleration(Dimension.Y) + 1024) / 2)
+    parse_int_1023_to_b62((input.acceleration(Dimension.Z) + 1024) / 2)
     string_builder = ""
     for (let value of list_analog_char) {
         string_builder = "" + string_builder + value
     }
-    bluetooth.uartWriteLine("A_" + string_builder)
+    bluetooth.uartWriteLine("*A_" + string_builder + "*")
 }
 function if_value_equals_set_to_b58 (value: string, is_equals: string, set_to: string) {
     if (value == is_equals) {
@@ -211,24 +207,21 @@ let received_ble = ""
 let bluetooth_connected = 0
 let string_builder = ""
 let pin_digit_09 = false
-let pin_digit_07 = false
-let pin_digit_06 = false
 let pin_digit_16 = false
 let pin_digit_15 = false
 let pin_digit_14 = false
 let pin_digit_13 = false
 let pin_digit_12 = false
 let pin_digit_08 = false
+let time_between_push = 0
 let list_digit_text: string[] = []
 let list_analog_char: string[] = []
-let time_between_push = 0
-time_between_push = 200
-basic.clearScreen()
-led.setBrightness(0)
-led.enable(false)
+input.setSoundThreshold(SoundThreshold.Loud, 240)
+bluetooth.startUartService()
 bluetooth.setTransmitPower(7)
 list_analog_char = []
 list_digit_text = []
+time_between_push = 100
 basic.forever(function () {
     basic.pause(time_between_push)
     if (bluetooth_connected == 1) {
